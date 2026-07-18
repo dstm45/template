@@ -5,11 +5,174 @@
 package database
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Role string
+
+const (
+	RoleStandard Role = "standard"
+	RoleAdmin    Role = "admin"
+)
+
+func (e *Role) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Role(s)
+	case string:
+		*e = Role(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Role: %T", src)
+	}
+	return nil
+}
+
+type NullRole struct {
+	Role  Role `json:"role"`
+	Valid bool `json:"valid"` // Valid is true if Role is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.Role, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Role.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Role), nil
+}
+
+type TokenFamilyStatus string
+
+const (
+	TokenFamilyStatusActive      TokenFamilyStatus = "active"
+	TokenFamilyStatusBlacklisted TokenFamilyStatus = "blacklisted"
+)
+
+func (e *TokenFamilyStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TokenFamilyStatus(s)
+	case string:
+		*e = TokenFamilyStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TokenFamilyStatus: %T", src)
+	}
+	return nil
+}
+
+type NullTokenFamilyStatus struct {
+	TokenFamilyStatus TokenFamilyStatus `json:"token_family_status"`
+	Valid             bool              `json:"valid"` // Valid is true if TokenFamilyStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTokenFamilyStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.TokenFamilyStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TokenFamilyStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTokenFamilyStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TokenFamilyStatus), nil
+}
+
+type TokenStatus string
+
+const (
+	TokenStatusActive      TokenStatus = "active"
+	TokenStatusUsed        TokenStatus = "used"
+	TokenStatusBlacklisted TokenStatus = "blacklisted"
+)
+
+func (e *TokenStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TokenStatus(s)
+	case string:
+		*e = TokenStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TokenStatus: %T", src)
+	}
+	return nil
+}
+
+type NullTokenStatus struct {
+	TokenStatus TokenStatus `json:"token_status"`
+	Valid       bool        `json:"valid"` // Valid is true if TokenStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTokenStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.TokenStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TokenStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTokenStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TokenStatus), nil
+}
+
+type Admin struct {
+	UserUuid uuid.UUID `json:"user_uuid"`
+}
+
+type Standard struct {
+	UserUuid uuid.UUID `json:"user_uuid"`
+}
+
+type Token struct {
+	ID        int64              `json:"id"`
+	Hash      string             `json:"hash"`
+	Uuid      uuid.UUID          `json:"uuid"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	Family    uuid.UUID          `json:"family"`
+	Status    TokenStatus        `json:"status"`
+}
+
+type TokenFamily struct {
+	ID       int64             `json:"id"`
+	Uuid     uuid.UUID         `json:"uuid"`
+	UserUuid uuid.UUID         `json:"user_uuid"`
+	Status   TokenFamilyStatus `json:"status"`
+}
 
 type User struct {
 	Uuid         uuid.UUID `json:"uuid"`
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"password_hash"`
+	Role         Role      `json:"role"`
+}
+
+type UserPublicDatum struct {
+	Email string    `json:"email"`
+	Uuid  uuid.UUID `json:"uuid"`
+	Role  Role      `json:"role"`
 }

@@ -11,51 +11,96 @@ import (
 	"github.com/google/uuid"
 )
 
-const createUser = `-- name: CreateUser :exec
-INSERT INTO users (email, password_hash) VALUES($1, $2)
+const getAdminData = `-- name: GetAdminData :one
+SELECT u.email, u.uuid, u.role FROM admins a
+JOIN user_public_data u on u.UUID=a.uuid
+WHERE a.user_uuid=$1
 `
 
-type CreateUserParams struct {
-	Email        string `json:"email"`
-	PasswordHash string `json:"password_hash"`
+func (q *Queries) GetAdminData(ctx context.Context, userUuid uuid.UUID) (UserPublicDatum, error) {
+	row := q.db.QueryRow(ctx, getAdminData, userUuid)
+	var i UserPublicDatum
+	err := row.Scan(&i.Email, &i.Uuid, &i.Role)
+	return i, err
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
-	_, err := q.db.Exec(ctx, createUser, arg.Email, arg.PasswordHash)
-	return err
-}
-
-const deleteUserByUUID = `-- name: DeleteUserByUUID :exec
-DELETE FROM users WHERE uuid=$1
+const getStandardData = `-- name: GetStandardData :one
+SELECT  u.email, u.uuid, u.role FROM standards s
+JOIN user_public_data u on u.uuid=s.uuid
+WHERE s.user_uuid=$1
 `
 
-func (q *Queries) DeleteUserByUUID(ctx context.Context, argUuid uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteUserByUUID, argUuid)
-	return err
+func (q *Queries) GetStandardData(ctx context.Context, userUuid uuid.UUID) (UserPublicDatum, error) {
+	row := q.db.QueryRow(ctx, getStandardData, userUuid)
+	var i UserPublicDatum
+	err := row.Scan(&i.Email, &i.Uuid, &i.Role)
+	return i, err
 }
 
-const getUserByUUID = `-- name: GetUserByUUID :one
-SELECT email from users WHERE uuid=$1
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT uuid, password_hash FROM users WHERE email=$1
 `
 
-func (q *Queries) GetUserByUUID(ctx context.Context, argUuid uuid.UUID) (string, error) {
-	row := q.db.QueryRow(ctx, getUserByUUID, argUuid)
-	var email string
-	err := row.Scan(&email)
-	return email, err
-}
-
-const updateUserByUUID = `-- name: UpdateUserByUUID :exec
-UPDATE users SET email=$2, password_hash=$3 WHERE uuid=$1
-`
-
-type UpdateUserByUUIDParams struct {
+type GetUserByEmailRow struct {
 	Uuid         uuid.UUID `json:"uuid"`
-	Email        string    `json:"email"`
 	PasswordHash string    `json:"password_hash"`
 }
 
-func (q *Queries) UpdateUserByUUID(ctx context.Context, arg UpdateUserByUUIDParams) error {
-	_, err := q.db.Exec(ctx, updateUserByUUID, arg.Uuid, arg.Email, arg.PasswordHash)
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i GetUserByEmailRow
+	err := row.Scan(&i.Uuid, &i.PasswordHash)
+	return i, err
+}
+
+const getUserDataByUUID = `-- name: GetUserDataByUUID :one
+SELECT email, uuid, role FROM user_public_data WHERE uuid=$1
+`
+
+func (q *Queries) GetUserDataByUUID(ctx context.Context, argUuid uuid.UUID) (UserPublicDatum, error) {
+	row := q.db.QueryRow(ctx, getUserDataByUUID, argUuid)
+	var i UserPublicDatum
+	err := row.Scan(&i.Email, &i.Uuid, &i.Role)
+	return i, err
+}
+
+const newAdmin = `-- name: NewAdmin :exec
+INSERT INTO admins (user_uuid) VALUES ($1)
+`
+
+func (q *Queries) NewAdmin(ctx context.Context, userUuid uuid.UUID) error {
+	_, err := q.db.Exec(ctx, newAdmin, userUuid)
 	return err
+}
+
+const newStandard = `-- name: NewStandard :exec
+INSERT INTO standards (user_uuid) VALUES ($1)
+`
+
+func (q *Queries) NewStandard(ctx context.Context, userUuid uuid.UUID) error {
+	_, err := q.db.Exec(ctx, newStandard, userUuid)
+	return err
+}
+
+const newUser = `-- name: NewUser :one
+INSERT INTO users (email, password_hash, role) VALUES($1, $2, $3)
+RETURNING uuid, email, password_hash, role
+`
+
+type NewUserParams struct {
+	Email        string `json:"email"`
+	PasswordHash string `json:"password_hash"`
+	Role         Role   `json:"role"`
+}
+
+func (q *Queries) NewUser(ctx context.Context, arg NewUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, newUser, arg.Email, arg.PasswordHash, arg.Role)
+	var i User
+	err := row.Scan(
+		&i.Uuid,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Role,
+	)
+	return i, err
 }
