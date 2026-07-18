@@ -11,7 +11,7 @@ type API struct {
 }
 
 type Services struct {
-	UserService services.IUserService
+	UserService services.UserService
 }
 
 func InitializeServices(queries *database.Queries) *Services {

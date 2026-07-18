@@ -2,7 +2,7 @@ package api
 
 import "net/http"
 
-func (api API) Routes() *http.ServeMux {
+func (api *API) Routes() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /user/{uuid}", api.UserController.NewUser)
 	mux.HandleFunc("GET /user/{uuid}", api.UserController.GetUser)

@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :exec
@@ -20,5 +22,40 @@ type CreateUserParams struct {
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	_, err := q.db.Exec(ctx, createUser, arg.Email, arg.PasswordHash)
+	return err
+}
+
+const deleteUserByUUID = `-- name: DeleteUserByUUID :exec
+DELETE FROM users WHERE uuid=$1
+`
+
+func (q *Queries) DeleteUserByUUID(ctx context.Context, argUuid uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUserByUUID, argUuid)
+	return err
+}
+
+const getUserByUUID = `-- name: GetUserByUUID :one
+SELECT email from users WHERE uuid=$1
+`
+
+func (q *Queries) GetUserByUUID(ctx context.Context, argUuid uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getUserByUUID, argUuid)
+	var email string
+	err := row.Scan(&email)
+	return email, err
+}
+
+const updateUserByUUID = `-- name: UpdateUserByUUID :exec
+UPDATE users SET email=$2, password_hash=$3 WHERE uuid=$1
+`
+
+type UpdateUserByUUIDParams struct {
+	Uuid         uuid.UUID `json:"uuid"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"password_hash"`
+}
+
+func (q *Queries) UpdateUserByUUID(ctx context.Context, arg UpdateUserByUUIDParams) error {
+	_, err := q.db.Exec(ctx, updateUserByUUID, arg.Uuid, arg.Email, arg.PasswordHash)
 	return err
 }

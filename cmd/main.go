@@ -16,9 +16,8 @@ func main() {
 	// db setup
 	Pool, err := database.Connection(ctx, configuration)
 	if err != nil {
-		log.Println("Erreur lors de la connection à la base de données")
+		log.Fatalln("Erreur lors de la connection à la base de données")
 	}
-	defer Pool.Close()
 	queries := database.New(Pool)
 
 	// api and server setup
@@ -26,5 +25,10 @@ func main() {
 	app := api.NewAPI(services)
 	serv := api.NewServer(configuration.Port, configuration.Addr, app)
 
-	serv.Start()
+	log.Printf("Démarrage du serveur sur %s:%s\n", configuration.Addr, configuration.Port)
+	err = serv.Start()
+	if err != nil {
+		log.Fatalf("Extinction du serveur. Err: %s\n", err)
+	}
+	Pool.Close()
 }
