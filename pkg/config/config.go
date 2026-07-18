@@ -9,8 +9,9 @@ import (
 )
 
 type Config struct {
-	Port string
-	Addr string
+	Port        string
+	Addr        string
+	DatabaseURI string
 }
 
 func LoadConfig() *Config {
@@ -19,8 +20,9 @@ func LoadConfig() *Config {
 		log.Println(err)
 	}
 	configuration := Config{
-		Port: check("SERVER_PORT", "8888"),
-		Addr: check("SERVER_ADDRESS", "0.0.0.0"),
+		Port:        check("SERVER_PORT", "8888"),
+		Addr:        check("SERVER_ADDRESS", "0.0.0.0"),
+		DatabaseURI: check("DATABASE_URI", ""),
 	}
 	return &configuration
 }
@@ -29,5 +31,5 @@ func check(parameter, defaultValue string) string {
 	if os.Getenv(parameter) == "" {
 		return defaultValue
 	}
-	return parameter
+	return os.Getenv(parameter)
 }
