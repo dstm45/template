@@ -16,7 +16,7 @@ const (
 	RoleKey CtxKey = "role"
 )
 
-func AuthMiddleware(next http.HandlerFunc, authService services.IAuthService) http.HandlerFunc {
+func AuthMiddleware(next http.HandlerFunc, authService services.AuthService) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("access_token")
 		if err != nil {
@@ -37,7 +37,7 @@ func AuthMiddleware(next http.HandlerFunc, authService services.IAuthService) ht
 	})
 }
 
-func IsAdminMiddleware(next http.HandlerFunc, authService services.IAuthService) http.HandlerFunc {
+func IsAdminMiddleware(next http.HandlerFunc, authService services.AuthService) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("access_token")
 		if err != nil {

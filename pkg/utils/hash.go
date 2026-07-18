@@ -2,6 +2,9 @@
 package utils
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -11,6 +14,12 @@ func HashPassword(password string) (string, error) {
 		return "", err
 	}
 	return string(passwordHash), nil
+}
+
+func HashToken(token string) string {
+	h := sha256.New()
+	h.Write([]byte(token))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func CheckHash(password, passwordHash string) error {

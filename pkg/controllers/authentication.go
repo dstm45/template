@@ -10,10 +10,10 @@ import (
 )
 
 type AuthController struct {
-	S services.IAuthService
+	S services.AuthService
 }
 
-func NewAuthController(service services.IAuthService) *AuthController {
+func NewAuthController(service services.AuthService) *AuthController {
 	controller := AuthController{
 		S: service,
 	}
@@ -60,6 +60,28 @@ func (c *AuthController) RefreshToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
-	c.S.DeleteToken(w)
+	cookie, err := r.Cookie("access_token")
+	if err != nil {
+		http.Error(w, "Not authenticated", http.StatusUnauthorized)
+		return
+	}
+	accessTokenString := cookie.Value
+	c.S.DeleteToken(r.Context(), accessTokenString)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		SameSite: http.SameSiteLaxMode,
+		HttpOnly: true,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		SameSite: http.SameSiteLaxMode,
+		HttpOnly: true,
+	})
 	w.WriteHeader(http.StatusOK)
 }

@@ -38,3 +38,4 @@ DELETE FROM tokens WHERE hash = $1;
 -- name: DeleteTokensByFamily :exec
 DELETE FROM tokens WHERE family = $1;
 
+
